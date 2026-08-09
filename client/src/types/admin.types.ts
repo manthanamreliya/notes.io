@@ -8,13 +8,14 @@ export interface AdminUser {
   joinedDate: string;
 }
 
-export interface SubjectBreakdown {
-  subject: string;
+export interface DepartmentBreakdown {
+  department: string;
   count: number;
 }
 
 export interface AdminStats {
   totalNotes: number;
   totalUsers: number;
-  subjectBreakdown: SubjectBreakdown[];
+  departmentBreakdown: DepartmentBreakdown[];
 }
+

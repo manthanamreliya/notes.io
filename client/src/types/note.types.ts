@@ -1,7 +1,7 @@
 export interface Note {
   id: string;
   title: string;
-  subject: string;
+  department: string;
   tags: string[];
   uploadedDate: string;
   fileSize?: string;
@@ -12,7 +12,7 @@ export interface Note {
 
 export interface AddNoteFormState {
   title: string;
-  subject: string;
+  department: string;
   tags: string;
   file: File | null;
 }
@@ -24,3 +24,4 @@ export interface UploadNoteResponse {
   message: string;
   note?: Note;
 }
+
