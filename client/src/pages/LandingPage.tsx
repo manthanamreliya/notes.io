@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { AuthMode, UserRole } from '../types/auth.types';
+import { AuthMode } from '../types/auth.types';
 import { Navbar } from '../components/layout/Navbar';
 import { Hero } from '../components/landing/Hero';
 import { ValueProps } from '../components/landing/ValueProps';
 import { AuthModal } from '../components/auth/AuthModal';
 
-export interface LandingPageProps {
-  onNavigateDashboard?: (role: UserRole) => void;
-}
+export interface LandingPageProps {}
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateDashboard }) => {
+export const LandingPage: React.FC<LandingPageProps> = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
 
@@ -33,7 +31,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateDashboard })
       <Navbar
         onOpenLogin={handleOpenLogin}
         onOpenSignup={handleOpenSignup}
-        onNavigateDashboard={onNavigateDashboard}
       />
 
       {/* Main Content Sections */}
