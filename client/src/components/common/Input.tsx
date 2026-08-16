@@ -38,7 +38,7 @@ export const Input: React.FC<InputProps> = ({
         name={id}
         aria-invalid={Boolean(error)}
         aria-describedby={ariaDescribedBy || undefined}
-        className={`w-full px-4 py-3 rounded-lg bg-surface text-text-primary placeholder:text-text-secondary/40 border transition-all duration-150 text-sm ${
+        className={`w-full px-4 py-2.5 rounded-lg bg-surface text-text-primary placeholder:text-text-secondary/40 border transition-all duration-150 text-sm ${
           error
             ? 'border-error focus:border-error focus:ring-1 focus:ring-error'
             : 'border-border focus:border-primary focus:shadow-glow-primary'

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DashboardHeader } from '../components/dashboard/DashboardHeader';
 import { StatsRow } from '../components/admin/StatsRow';
 import { UsersTable } from '../components/admin/UsersTable';
@@ -9,25 +9,73 @@ import { Button } from '../components/common/Button';
 import { Note } from '../types/note.types';
 import { AdminUser } from '../types/admin.types';
 import { UserRole } from '../types/auth.types';
-import { mockNotes, mockUsers, initialDepartments, computeStats, deleteNote } from '../data/mockData';
+import { mockUsers, initialDepartments, computeStats } from '../data/mockData';
+import { getAdminNotes, getDepartments, getAdminUsers } from '../api/notes.api';
 
 export interface AdminDashboardProps {
   currentRole?: UserRole;
-  onNavigateHome: () => void;
+  onNavigateHome?: () => void;
 }
 
-export const AdminDashboard: React.FC<AdminDashboardProps> = ({
-  currentRole,
-  onNavigateHome,
-}) => {
-  const [notes, setNotes] = useState<Note[]>(mockNotes);
-  const [users] = useState<AdminUser[]>(mockUsers);
+export const AdminDashboard: React.FC<AdminDashboardProps> = () => {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>(mockUsers);
   const [departments, setDepartments] = useState<string[]>(initialDepartments);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [isManageDeptOpen, setIsManageDeptOpen] = useState<boolean>(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [notesRes, deptsRes, usersRes] = await Promise.all([
+        getAdminNotes(),
+        getDepartments(),
+        getAdminUsers(),
+      ]);
+
+      if (notesRes.success && Array.isArray(notesRes.data)) {
+        const formattedNotes: Note[] = notesRes.data.map((n: any) => ({
+          id: n._id || n.id,
+          title: n.title,
+          department: typeof n.department === 'object' ? n.department?.name : n.department,
+          tags: n.tags || [],
+          uploadedDate: n.createdAt ? new Date(n.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          fileSize: 'PDF Document',
+          pageCount: n.pageCount || 1,
+          author: typeof n.uploadedBy === 'object' ? n.uploadedBy?.name : 'Admin',
+        }));
+        setNotes(formattedNotes);
+      }
+
+      if (deptsRes.success && Array.isArray(deptsRes.data) && deptsRes.data.length > 0) {
+        setDepartments(deptsRes.data.map((d: any) => d.name));
+      }
+
+      if (usersRes.success && Array.isArray(usersRes.data) && usersRes.data.length > 0) {
+        const formattedUsers: AdminUser[] = usersRes.data.map((u: any) => ({
+          id: u.id || u._id,
+          name: u.name,
+          email: u.email,
+          mobileNumber: u.mobileNumber || u.mobile || 'N/A',
+          role: u.role || 'student',
+          joinedDate: u.joinedDate || (u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+        }));
+        setUsers(formattedUsers);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   // Derived note counts by department map
   const noteCountsByDept = useMemo(() => {
@@ -52,13 +100,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleRenameDepartment = (oldName: string, newName: string) => {
-    // 1. Update departments list
     setDepartments((prev) => prev.map((d) => (d === oldName ? newName : d)));
-    // 2. Update notes belonging to oldName department
     setNotes((prev) =>
       prev.map((n) => (n.department === oldName ? { ...n, department: newName } : n))
     );
-    // 3. Update active filter if applicable
     if (selectedDepartmentFilter === oldName) {
       setSelectedDepartmentFilter(newName);
     }
@@ -67,7 +112,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleDeleteDepartment = (deptName: string) => {
     const count = noteCountsByDept[deptName] || 0;
-    if (count > 0) return; // Guard against deleting departments with notes
+    if (count > 0) return;
 
     setDepartments((prev) => prev.filter((d) => d !== deptName));
     if (selectedDepartmentFilter === deptName) {
@@ -77,7 +122,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleNoteAdded = (newNote: Note) => {
-    // If note department is not in departments list, add it
     if (!departments.includes(newNote.department)) {
       setDepartments((prev) => [...prev, newNote.department]);
     }
@@ -85,14 +129,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showToast(`Note "${newNote.title}" published successfully!`, 'success');
   };
 
-  const handleDeleteNote = async (noteId: string) => {
-    const targetNote = notes.find((n) => n.id === noteId);
-    if (!targetNote) return;
-
-    await deleteNote(noteId);
-
+  const handleDeleteNote = (noteId: string) => {
     setNotes((prev) => prev.filter((n) => n.id !== noteId));
-    showToast(`Note "${targetNote.title}" removed.`, 'info');
+    showToast('Note deleted successfully.', 'info');
   };
 
   const showToast = (message: string, type: 'success' | 'info' = 'success') => {
@@ -103,12 +142,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-primary selection:text-white">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-primary selection:text-white overflow-x-hidden">
       {/* Top Bar Header */}
-      <DashboardHeader
-        currentRole={currentRole}
-        onNavigateHome={onNavigateHome}
-      />
+      <DashboardHeader />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -159,35 +195,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* Stats Row Section */}
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-            System Overview
-          </h2>
-          <StatsRow
-            stats={stats}
-            selectedDepartment={selectedDepartmentFilter}
-            onSelectDepartment={(dept) => setSelectedDepartmentFilter(dept)}
-          />
-        </section>
+        {isLoading ? (
+          <div className="p-12 text-center text-text-secondary text-sm">
+            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
+            Loading notes repository...
+          </div>
+        ) : (
+          <>
+            {/* Stats Row Section */}
+            <section className="space-y-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                System Overview
+              </h2>
+              <StatsRow
+                stats={stats}
+                selectedDepartment={selectedDepartmentFilter}
+                onSelectDepartment={(dept) => setSelectedDepartmentFilter(dept)}
+              />
+            </section>
 
-        {/* Published Notes Table Section */}
-        <section className="space-y-3">
-          <NotesTable
-            notes={notes}
-            onDeleteNote={handleDeleteNote}
-            filterDepartment={selectedDepartmentFilter}
-            onClearDepartmentFilter={() => setSelectedDepartmentFilter(null)}
-          />
-        </section>
+            {/* Published Notes Table Section */}
+            <section className="space-y-3">
+              <NotesTable
+                notes={notes}
+                onDeleteNote={handleDeleteNote}
+                filterDepartment={selectedDepartmentFilter}
+                onClearDepartmentFilter={() => setSelectedDepartmentFilter(null)}
+              />
+            </section>
 
-        {/* Users Table Section */}
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-            User Accounts
-          </h2>
-          <UsersTable users={users} />
-        </section>
+            {/* Users Table Section */}
+            <section className="space-y-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                User Accounts
+              </h2>
+              <UsersTable users={users} />
+            </section>
+          </>
+        )}
       </main>
 
       {/* Footer */}
@@ -216,4 +261,3 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     </div>
   );
 };
-

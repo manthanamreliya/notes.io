@@ -4,6 +4,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
+  mobileNumber?: string;
   role: UserRole;
   joinedDate: string;
 }
@@ -18,4 +19,3 @@ export interface AdminStats {
   totalUsers: number;
   departmentBreakdown: DepartmentBreakdown[];
 }
-

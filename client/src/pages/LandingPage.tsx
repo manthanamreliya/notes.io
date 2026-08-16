@@ -26,7 +26,7 @@ export const LandingPage: React.FC<LandingPageProps> = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col justify-between selection:bg-primary selection:text-white">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col justify-between selection:bg-primary selection:text-white overflow-x-hidden">
       {/* Top Navbar */}
       <Navbar
         onOpenLogin={handleOpenLogin}
