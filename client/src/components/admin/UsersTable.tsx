@@ -16,7 +16,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users }) => {
 
   return (
     <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <h2 className="text-base font-semibold text-text-primary">
           User Accounts ({users.length})
         </h2>
@@ -36,6 +36,9 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users }) => {
                 Email
               </th>
               <th scope="col" className="px-6 py-3">
+                Mobile Number
+              </th>
+              <th scope="col" className="px-6 py-3">
                 Joined Date
               </th>
             </tr>
@@ -51,6 +54,9 @@ export const UsersTable: React.FC<UsersTableProps> = ({ users }) => {
                 </td>
                 <td className="px-6 py-4 text-text-secondary whitespace-nowrap">
                   {user.email}
+                </td>
+                <td className="px-6 py-4 text-text-secondary whitespace-nowrap font-mono text-xs">
+                  {user.mobileNumber || 'N/A'}
                 </td>
                 <td className="px-6 py-4 text-text-secondary whitespace-nowrap font-mono text-xs">
                   {user.joinedDate}

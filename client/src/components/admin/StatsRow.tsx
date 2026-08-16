@@ -13,7 +13,7 @@ export const StatsRow: React.FC<StatsRowProps> = ({
   onSelectDepartment,
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
       {/* Stat Card 1: Total Notes */}
       <div className="bg-surface border border-border rounded-xl p-5 flex items-center justify-between shadow-sm">
         <div>

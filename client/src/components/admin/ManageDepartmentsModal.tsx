@@ -72,7 +72,7 @@ export const ManageDepartmentsModal: React.FC<ManageDepartmentsModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Manage Departments">
-      <div className="p-6 space-y-6 animate-form-fade-in">
+      <div className="p-4 sm:p-6 space-y-6 animate-form-fade-in">
         {errorMsg && (
           <div className="p-3 rounded-lg bg-error/10 border border-error/30 text-error text-xs">
             {errorMsg}
@@ -84,7 +84,7 @@ export const ManageDepartmentsModal: React.FC<ManageDepartmentsModalProps> = ({
           <label className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary select-none">
             Create New Department
           </label>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="flex-1">
               <Input
                 id="new-department"

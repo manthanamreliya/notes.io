@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Note } from '../../types/note.types';
 import { Badge } from '../common/Badge';
 import { Button } from '../common/Button';
+import { deleteNote as deleteNoteApi } from '../../api/notes.api';
 
 export interface NotesTableProps {
   notes: Note[];
@@ -18,6 +19,7 @@ export const NotesTable: React.FC<NotesTableProps> = ({
 }) => {
   const [sortAsc, setSortAsc] = useState<boolean>(true);
   const [isSortedByDept, setIsSortedByDept] = useState<boolean>(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Apply department filter & sorting
   const processedNotes = useMemo(() => {
@@ -50,10 +52,31 @@ export const NotesTable: React.FC<NotesTableProps> = ({
     }
   };
 
+  const handleDelete = async (note: Note) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete note "${note.title}"? This action will remove the file from Cloudinary and database permanently.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(note.id);
+    try {
+      const res = await deleteNoteApi(note.id);
+      if (res.success) {
+        onDeleteNote(note.id);
+      } else {
+        alert(res.message || 'Failed to delete note');
+      }
+    } catch {
+      alert('An error occurred while deleting the note.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
       {/* Header bar with total & active filter */}
-      <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold text-text-primary">
             Published Notes ({processedNotes.length})
@@ -146,7 +169,9 @@ export const NotesTable: React.FC<NotesTableProps> = ({
                     <Button
                       variant="secondary"
                       fullWidth={false}
-                      onClick={() => onDeleteNote(note.id)}
+                      disabled={deletingId === note.id}
+                      isLoading={deletingId === note.id}
+                      onClick={() => handleDelete(note)}
                       className="text-xs px-3 py-1 h-7 border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-500 hover:bg-red-500/10"
                     >
                       Delete
@@ -167,4 +192,3 @@ export const NotesTable: React.FC<NotesTableProps> = ({
     </div>
   );
 };
-

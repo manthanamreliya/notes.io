@@ -3,7 +3,7 @@ import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { AddNoteFormState, AddNoteFormErrors, Note } from '../../types/note.types';
-import { uploadNote } from '../../data/mockData';
+import { uploadNote as uploadNoteApi } from '../../api/notes.api';
 
 export interface AddNoteModalProps {
   isOpen: boolean;
@@ -82,6 +82,15 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         setFormState((prev) => ({ ...prev, file: null }));
         return;
       }
+
+      if (selectedFile.size > 20 * 1024 * 1024) {
+        setErrors((prev) => ({
+          ...prev,
+          file: 'File size exceeds 20MB limit',
+        }));
+        setFormState((prev) => ({ ...prev, file: null }));
+        return;
+      }
     }
 
     setFormState((prev) => ({ ...prev, file: selectedFile }));
@@ -129,15 +138,31 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
     setApiError(null);
 
     try {
-      const response = await uploadNote({
-        title: formState.title,
-        department: finalDept,
-        tags: formState.tags,
-        file: formState.file,
-      });
+      const formData = new FormData();
+      formData.append('title', formState.title.trim());
+      formData.append('department', finalDept);
+      if (formState.tags.trim()) {
+        formData.append('tags', formState.tags.trim());
+      }
+      formData.append('file', formState.file);
 
-      if (response.success && response.note) {
-        onNoteAdded(response.note);
+      const response = await uploadNoteApi(formData);
+
+      if (response.success && response.data) {
+        const rawNote = response.data;
+        const newNote: Note = {
+          id: rawNote._id || rawNote.id,
+          title: rawNote.title,
+          department: typeof rawNote.department === 'object' ? rawNote.department.name : rawNote.department,
+          tags: rawNote.tags || [],
+          uploadedDate: rawNote.createdAt ? new Date(rawNote.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          fileSize: 'PDF Document',
+          pageCount: rawNote.pageCount || 1,
+          author: typeof rawNote.uploadedBy === 'object' ? rawNote.uploadedBy.name : 'Admin',
+        };
+
+        onNoteAdded(newNote);
+
         // Reset form
         setFormState({
           title: '',
@@ -149,7 +174,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         setCustomDepartment('');
         onClose();
       } else {
-        setApiError(response.message || 'Failed to upload note');
+        setApiError(response.message || 'Failed to upload note document.');
       }
     } catch (err) {
       setApiError('An unexpected error occurred during upload.');
@@ -160,7 +185,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Publish New Note">
-      <form onSubmit={handleSubmit} className="p-7 space-y-4 animate-form-fade-in">
+      <form onSubmit={handleSubmit} className="p-4 sm:p-7 space-y-4 animate-form-fade-in">
         {apiError && (
           <div className="p-3 rounded-lg bg-error/10 border border-error/30 text-error text-xs">
             {apiError}
@@ -238,7 +263,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         {/* PDF File Upload Input */}
         <div className="w-full flex flex-col gap-1">
           <label className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary select-none">
-            PDF File * (.pdf only)
+            PDF File * (.pdf only, max 20MB)
           </label>
           <div
             className={`w-full border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-150 bg-surface ${
@@ -276,7 +301,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
                     Click to select PDF document
                   </span>
                   <span className="text-xs text-text-secondary/70">
-                    Supports .pdf format up to 25MB
+                    Supports .pdf format up to 20MB
                   </span>
                 </div>
               )}
@@ -290,7 +315,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="pt-4 flex items-center justify-end gap-3">
+        <div className="pt-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 font-semibold">
           <Button
             type="button"
             variant="secondary"
@@ -308,11 +333,10 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
             isLoading={isSubmitting}
             className="text-xs px-5 font-semibold"
           >
-            Publish
+            {isSubmitting ? 'Uploading to Cloudinary...' : 'Publish'}
           </Button>
         </div>
       </form>
     </Modal>
   );
 };
-
