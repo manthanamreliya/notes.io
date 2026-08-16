@@ -15,6 +15,9 @@ import { errorHandler } from "./middleware/error.middleware";
 
 const app: Application = express();
 
+// Trust first hop reverse proxy (Render / Cloudflare) for accurate X-Forwarded-For IP resolution
+app.set("trust proxy", 1);
+
 // Security Middlewares
 app.use(helmet());
 const allowedOrigins = env.corsOrigin.includes(",")
