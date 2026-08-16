@@ -10,7 +10,7 @@ export interface NoteCardProps {
 
 export const NoteCard: React.FC<NoteCardProps> = ({ note, onView }) => {
   return (
-    <div className="group relative bg-surface border border-border rounded-xl p-5 flex flex-col justify-between transition-all duration-150 hover:border-primary hover:shadow-glow-primary">
+    <div className="group relative w-full bg-surface border border-border rounded-xl p-5 flex flex-col justify-between transition-all duration-150 hover:border-primary hover:shadow-glow-primary">
       {/* Top Details: Department badge & Date */}
       <div>
         <div className="flex items-center justify-between gap-2 mb-3">

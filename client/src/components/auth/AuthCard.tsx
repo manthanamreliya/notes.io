@@ -19,10 +19,11 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode = 'login' }) => 
     apiSuccessMessage,
     handleLoginChange,
     handleSignupChange,
-    handleRoleSelect,
+    handleSignupBlur,
     handleLoginSubmit,
     handleSignupSubmit,
     switchMode,
+    isSignupValid,
   } = useAuthForm(initialMode);
 
   const contentRef = useRef<HTMLDivElement>(null);
@@ -57,7 +58,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode = 'login' }) => 
           aria-selected={mode === 'login'}
           aria-controls="panel-login"
           onClick={() => switchMode('login')}
-          className={`flex-1 py-4 text-sm text-center font-medium focus:outline-none transition-colors duration-200 ${
+          className={`flex-1 py-3 text-sm text-center font-medium focus:outline-none transition-colors duration-200 ${
             mode === 'login'
               ? 'text-primary font-semibold'
               : 'text-text-secondary hover:text-text-primary'
@@ -72,7 +73,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode = 'login' }) => 
           aria-selected={mode === 'signup'}
           aria-controls="panel-signup"
           onClick={() => switchMode('signup')}
-          className={`flex-1 py-4 text-sm text-center font-medium focus:outline-none transition-colors duration-200 ${
+          className={`flex-1 py-3 text-sm text-center font-medium focus:outline-none transition-colors duration-200 ${
             mode === 'signup'
               ? 'text-primary font-semibold'
               : 'text-text-secondary hover:text-text-primary'
@@ -94,7 +95,7 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode = 'login' }) => 
         className="transition-[height] duration-250 ease-out overflow-hidden"
         style={{ height: contentHeight ? `${contentHeight}px` : 'auto' }}
       >
-        <div ref={contentRef} className="p-7 sm:p-9">
+        <div ref={contentRef} className="p-5 sm:p-6">
           <div
             key={mode}
             id={mode === 'login' ? 'panel-login' : 'panel-signup'}
@@ -120,8 +121,9 @@ export const AuthCard: React.FC<AuthCardProps> = ({ initialMode = 'login' }) => 
                 apiError={apiError}
                 apiSuccessMessage={apiSuccessMessage}
                 onChange={handleSignupChange}
-                onRoleSelect={handleRoleSelect}
+                onBlur={handleSignupBlur}
                 onSubmit={handleSignupSubmit}
+                isFormValid={isSignupValid}
               />
             )}
           </div>

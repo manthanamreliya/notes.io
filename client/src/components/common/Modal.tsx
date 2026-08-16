@@ -40,15 +40,15 @@ export const Modal: React.FC<ModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label={title || 'Dialog'}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0e1a]/92 backdrop-blur-md select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-[#0a0e1a]/92 backdrop-blur-md select-none overflow-y-auto"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md bg-surface-elevated border border-primary/30 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] shadow-glow-primary/20 overflow-hidden text-left"
+        className="relative w-full max-w-md my-auto bg-surface-elevated border border-primary/30 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] shadow-glow-primary/20 overflow-hidden text-left max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top accent gradient bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-[#4f7cff] via-[#60a5fa] to-[#4f7cff]" />
+        <div className="h-1 w-full shrink-0 bg-gradient-to-r from-[#4f7cff] via-[#60a5fa] to-[#4f7cff]" />
 
         {/* Modal Close Button */}
         <button
@@ -74,12 +74,14 @@ export const Modal: React.FC<ModalProps> = ({
         </button>
 
         {title && (
-          <div className="px-7 pt-6 pb-2 border-b border-border">
-            <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
+          <div className="px-5 sm:px-7 pt-5 sm:pt-6 pb-3 border-b border-border shrink-0">
+            <h2 className="text-base sm:text-lg font-semibold text-text-primary pr-8">{title}</h2>
           </div>
         )}
 
-        {children}
+        <div className="overflow-y-auto flex-1">
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ export const DepartmentCard: React.FC<DepartmentCardProps> = ({
   return (
     <div
       onClick={() => onClick(department)}
-      className="group relative bg-surface border border-border rounded-xl p-6 flex flex-col justify-between cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-glow-primary hover:-translate-y-0.5"
+      className="group relative w-full bg-surface border border-border rounded-xl p-5 sm:p-6 flex flex-col justify-between cursor-pointer transition-all duration-200 hover:border-primary hover:shadow-glow-primary hover:-translate-y-0.5"
     >
       <div>
         {/* Top Department Icon & Badge */}

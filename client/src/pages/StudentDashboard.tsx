@@ -6,18 +6,19 @@ import { NoteViewer } from '../components/dashboard/NoteViewer';
 import { MacSearchInput } from '../components/dashboard/MacSearchInput';
 import { Note } from '../types/note.types';
 import { UserRole } from '../types/auth.types';
-import { mockNotes, initialDepartments } from '../data/mockData';
+import { initialDepartments } from '../data/mockData';
+import { getNotes, getDepartments } from '../api/notes.api';
 
 export interface StudentDashboardProps {
   currentRole?: UserRole;
-  onNavigateHome: () => void;
+  onNavigateHome?: () => void;
 }
 
-export const StudentDashboard: React.FC<StudentDashboardProps> = ({
-  currentRole,
-  onNavigateHome,
-}) => {
-  const [notes] = useState<Note[]>(mockNotes);
+export const StudentDashboard: React.FC<StudentDashboardProps> = () => {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [departments, setDepartments] = useState<string[]>(initialDepartments);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeViewNote, setActiveViewNote] = useState<Note | null>(null);
 
@@ -30,6 +31,38 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     }
     return null;
   });
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [notesRes, deptsRes] = await Promise.all([getNotes(), getDepartments()]);
+      if (notesRes.success && Array.isArray(notesRes.data)) {
+        const formattedNotes: Note[] = notesRes.data.map((n: any) => ({
+          id: n._id || n.id,
+          title: n.title,
+          department: typeof n.department === 'object' ? n.department?.name : n.department,
+          tags: n.tags || [],
+          uploadedDate: n.createdAt ? new Date(n.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          fileSize: 'PDF Document',
+          pageCount: n.pageCount || 1,
+          author: typeof n.uploadedBy === 'object' ? n.uploadedBy?.name : 'Admin',
+        }));
+        setNotes(formattedNotes);
+      }
+
+      if (deptsRes.success && Array.isArray(deptsRes.data) && deptsRes.data.length > 0) {
+        setDepartments(deptsRes.data.map((d: any) => d.name));
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   // Handle browser back/forward navigation
   useEffect(() => {
@@ -50,12 +83,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const departmentStats = useMemo(() => {
     const countsMap: Record<string, number> = {};
 
-    // Ensure all default departments exist in map
-    initialDepartments.forEach((dept) => {
+    departments.forEach((dept) => {
       countsMap[dept] = 0;
     });
 
-    // Accumulate counts from notes
     notes.forEach((note) => {
       countsMap[note.department] = (countsMap[note.department] || 0) + 1;
     });
@@ -64,7 +95,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       department,
       count,
     }));
-  }, [notes]);
+  }, [notes, departments]);
 
   // Contextual search filtering for Departments view vs Notes view
   const filteredDepartments = useMemo(() => {
@@ -96,12 +127,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-primary selection:text-white">
+    <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-primary selection:text-white overflow-x-hidden">
       {/* Top Header Bar */}
-      <DashboardHeader
-        currentRole={currentRole}
-        onNavigateHome={onNavigateHome}
-      />
+      <DashboardHeader />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -151,79 +179,88 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         </div>
 
-        {/* 1. Main Department Cards Grid View (Default) */}
-        {!selectedDepartment && (
+        {isLoading ? (
+          <div className="p-12 text-center text-text-secondary text-sm">
+            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
+            Loading study material catalog...
+          </div>
+        ) : (
           <>
-            {filteredDepartments.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-                {filteredDepartments.map(({ department, count }) => (
-                  <DepartmentCard
-                    key={department}
-                    department={department}
-                    noteCount={count}
-                    onClick={handleSelectDepartment}
-                  />
-                ))}
-              </div>
-            ) : (
-              /* Empty Search State for Departments */
-              <div className="w-full bg-surface border border-border/80 rounded-2xl p-12 text-center my-8 flex flex-col items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/30 text-primary flex items-center justify-center mb-4">
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary">No departments found</h3>
-                <p className="text-sm text-text-secondary max-w-sm mt-1 mb-4">
-                  We couldn't find any department matching "{searchQuery}".
-                </p>
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="text-xs font-semibold text-primary hover:text-primary-hover underline"
-                >
-                  Clear search
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* 2. Department Note List View */}
-        {selectedDepartment && (
-          <>
-            {filteredNotes.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-                {filteredNotes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onView={(n) => setActiveViewNote(n)}
-                  />
-                ))}
-              </div>
-            ) : (
-              /* Empty Notes State inside Department */
-              <div className="w-full bg-surface border border-border/80 rounded-2xl p-12 text-center my-8 flex flex-col items-center justify-center">
-                <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/30 text-primary flex items-center justify-center mb-4">
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary">No notes found</h3>
-                <p className="text-sm text-text-secondary max-w-sm mt-1 mb-4">
-                  {searchQuery
-                    ? `No notes matching "${searchQuery}" in ${selectedDepartment}.`
-                    : `There are currently no published notes in ${selectedDepartment}.`}
-                </p>
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="text-xs font-semibold text-primary hover:text-primary-hover underline"
-                  >
-                    Clear search
-                  </button>
+            {/* 1. Main Department Cards Grid View (Default) */}
+            {!selectedDepartment && (
+              <>
+                {filteredDepartments.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                    {filteredDepartments.map(({ department, count }) => (
+                      <DepartmentCard
+                        key={department}
+                        department={department}
+                        noteCount={count}
+                        onClick={handleSelectDepartment}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  /* Empty Search State for Departments */
+                  <div className="w-full bg-surface border border-border/80 rounded-2xl p-12 text-center my-8 flex flex-col items-center justify-center">
+                    <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/30 text-primary flex items-center justify-center mb-4">
+                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-text-primary">No departments found</h3>
+                    <p className="text-sm text-text-secondary max-w-sm mt-1 mb-4">
+                      We couldn't find any department matching "{searchQuery}".
+                    </p>
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="text-xs font-semibold text-primary hover:text-primary-hover underline"
+                    >
+                      Clear search
+                    </button>
+                  </div>
                 )}
-              </div>
+              </>
+            )}
+
+            {/* 2. Department Note List View */}
+            {selectedDepartment && (
+              <>
+                {filteredNotes.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                    {filteredNotes.map((note) => (
+                      <NoteCard
+                        key={note.id}
+                        note={note}
+                        onView={(n) => setActiveViewNote(n)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  /* Empty Notes State inside Department */
+                  <div className="w-full bg-surface border border-border/80 rounded-2xl p-12 text-center my-8 flex flex-col items-center justify-center">
+                    <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/30 text-primary flex items-center justify-center mb-4">
+                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-text-primary">No notes found</h3>
+                    <p className="text-sm text-text-secondary max-w-sm mt-1 mb-4">
+                      {searchQuery
+                        ? `No notes matching "${searchQuery}" in ${selectedDepartment}.`
+                        : `There are currently no published notes in ${selectedDepartment}.`}
+                    </p>
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="text-xs font-semibold text-primary hover:text-primary-hover underline"
+                      >
+                        Clear search
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -243,4 +280,3 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     </div>
   );
 };
-
