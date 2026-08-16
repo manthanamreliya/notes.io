@@ -9,7 +9,7 @@ const isProduction = env.nodeEnv === "production";
 const cookieOptionsBase: CookieOptions = {
   httpOnly: true,
   secure: isProduction,
-  sameSite: "strict",
+  sameSite: isProduction ? "none" : "lax",
 };
 
 const accessTokenCookieOptions: CookieOptions = {
