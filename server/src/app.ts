@@ -17,9 +17,13 @@ const app: Application = express();
 
 // Security Middlewares
 app.use(helmet());
+const allowedOrigins = env.corsOrigin.includes(",")
+  ? env.corsOrigin.split(",").map((o) => o.trim())
+  : env.corsOrigin;
+
 app.use(
   cors({
-    origin: env.corsOrigin,
+    origin: allowedOrigins,
     credentials: true,
   })
 );
